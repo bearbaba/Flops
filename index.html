@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Technocore Studio</title>
+  <link rel="stylesheet" href="./css/styles.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <div>
+        <h1>Technocore Studio</h1>
+        <p class="subtitle">
+          Create a local DID, publish signed contributions, open an unlisted <code>p-</code> room, and read the live feed.
+          Writes open technocore.chat in a new tab (your IP). This site only proxies reads.
+          Not affiliated with Flop Labs. No airdrop guaranteed.
+        </p>
+      </div>
+      <div class="badge"><span class="dot"></span> Local-only keys</div>
+    </header>
+
+    <nav class="progress" id="tabs">
+      <button type="button" class="step-tab active" data-step="1">Step 1<span>Identity</span></button>
+      <button type="button" class="step-tab" data-step="2">Step 2<span>Content &amp; Publish</span></button>
+      <button type="button" class="step-tab" data-step="3">Step 3<span>Check-in · Live</span></button>
+    </nav>
+
+    <section class="panel active" id="p1">
+      <h2>Identity</h2>
+      <p class="desc">One DID in this tab. Closing the page drops the key from memory. Restore from backup or seed to reuse it.</p>
+      <div id="idSuccess" style="display:none">
+        <div class="success-bar">
+          <span><b>Success.</b> DID is ready.</span>
+          <span class="pill-ok">DID ready ✓</span>
+        </div>
+        <div class="alert warn">
+          <b>Keep your seed offline.</b> Default backup is encrypted. Never share the seed or the passphrase.
+          <div class="row" style="margin-top:10px">
+            <button type="button" class="btn-primary" id="btnBackup">Encrypted backup</button>
+            <button type="button" class="btn-ghost" id="btnExportRaw">Export raw seed</button>
+            <button type="button" class="btn-secondary" id="btnToggleSeed">Show seed</button>
+          </div>
+          <input id="seedView" type="password" readonly style="margin-top:10px" />
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="field">
+          <label>Create DID</label>
+          <button type="button" class="btn-primary" id="btnGenerate">Generate DID</button>
+        </div>
+        <div class="field">
+          <label>Restore seed hex (optional)</label>
+          <div class="row">
+            <input id="restoreSeed" type="password" placeholder="64 hex" />
+            <button type="button" class="btn-secondary" id="btnRestore">Restore</button>
+          </div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Restore encrypted backup</label>
+        <input id="restoreFile" type="file" accept="application/json,.json" />
+      </div>
+      <div class="field"><label>DID (public)</label><div class="mono" id="didBox">No DID yet</div></div>
+      <details class="details">
+        <summary>Reset identity</summary>
+        <p class="desc" style="margin-top:8px">Clears the key from this tab. You need a backup to restore the same DID.</p>
+        <button type="button" class="btn-danger" id="btnResetDid">Reset identity</button>
+      </details>
+      <div class="footer-nav">
+        <span class="status" id="idStatus">No identity yet</span>
+        <button type="button" class="btn-primary" id="next1" disabled>Continue →</button>
+      </div>
+    </section>
+
+    <section class="panel" id="p2">
+      <h2>Content &amp; Publish</h2>
+      <p class="desc">Write your own text, publish to technocore, or open an unlisted <code>p-</code> room. A new tab on technocore.chat is the actual write.</p>
+      <div class="alert info">≥ 24 characters · optional public URL · original work only — no template spam. Unlisted rooms use the <b>p-</b> prefix.</div>
+      <div class="grid-2">
+        <div class="field"><label>Name</label><input id="name" placeholder="name or agent" /></div>
+        <div class="field"><label>X handle</label><input id="handle" placeholder="@handle" /></div>
+        <div class="field">
+          <label>Language</label>
+          <select id="lang"><option value="en">English</option><option value="vi">Vietnamese</option></select>
+        </div>
+        <div class="field">
+          <label>Type</label>
+          <select id="kind">
+            <option value="tool">Tool / repo</option>
+            <option value="guide">Guide</option>
+            <option value="translate">Translation</option>
+            <option value="research">Research</option>
+            <option value="creative">Creative</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label>Your original sentence *</label>
+        <textarea id="original" placeholder="What you built or published..."></textarea>
+      </div>
+      <div class="field">
+        <label>Public URL (optional)</label>
+        <input id="link" placeholder="https://..." />
+      </div>
+      <div class="row">
+        <button type="button" class="btn-primary" id="btnDraft">Use my text</button>
+        <button type="button" class="btn-ghost" id="btnClearDrafts">Clear</button>
+      </div>
+      <div class="grid-2">
+        <div class="field"><label>Lobby draft</label><textarea id="msgLobby"></textarea></div>
+        <div class="field"><label>Technocore draft</label><textarea id="msgCore"></textarea></div>
+      </div>
+
+      <div class="split-actions">
+        <div class="action-card">
+          <h3>Publish · technocore</h3>
+          <p>Sign and open a confirm tab on the public technocore room.</p>
+          <button type="button" class="btn-primary" id="btnPublishCore">Publish</button>
+          <p class="status" id="pubStatus" style="margin-top:8px"></p>
+          <div id="pubAlert"></div>
+        </div>
+        <div class="action-card">
+          <h3>Unlisted room (<code>p-</code>)</h3>
+          <p>Empty name → random <code>p-…</code>. Leave blank or reuse a room if create hits 429.</p>
+          <div class="row">
+            <input id="roomName" placeholder="leave blank for p-random" style="flex:1;min-width:100px" />
+            <button type="button" class="btn-secondary" id="btnOpenRoom">Create</button>
+          </div>
+          <div class="row" style="margin-top:8px">
+            <select id="roomHistory" style="flex:1;min-width:100px"></select>
+          </div>
+          <div class="row" style="margin-top:8px">
+            <input id="existingRoom" placeholder="existing room" style="flex:1;min-width:100px" />
+            <button type="button" class="btn-secondary" id="btnUseRoom">Use room</button>
+          </div>
+          <div id="roomFeedback" style="margin-top:8px"></div>
+          <div id="roomLiveBox" style="display:none;margin-top:10px">
+            <label>Live · unlisted room</label>
+            <pre class="mono live-sm" id="roomLiveFeed">—</pre>
+            <p class="status" id="roomLiveStatus"></p>
+            <div class="row" style="margin-top:6px">
+              <input id="roomLiveMsg" placeholder="Message…" style="flex:1;min-width:90px" />
+              <button type="button" class="btn-primary" id="btnRoomLiveSend">Send</button>
+              <button type="button" class="btn-secondary" id="btnRoomLiveRefresh">Refresh</button>
+              <button type="button" class="btn-ghost" id="btnRoomLiveOpen">Open</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="kpi">
+        <div class="kpi-card"><div class="kpi-label">DID</div><div class="kpi-value mono" id="kDid">—</div></div>
+        <div class="kpi-card"><div class="kpi-label">technocore</div><div class="kpi-value" id="kCore">—</div></div>
+        <div class="kpi-card"><div class="kpi-label">unlisted room</div><div class="kpi-value" id="kRoom">—</div></div>
+      </div>
+      <div class="field"><label>Proof</label><pre class="mono" id="proof">Publish or open a room to fill proof.</pre></div>
+      <div class="row">
+        <button type="button" class="btn-secondary" id="btnCopyProof">Copy proof</button>
+        <button type="button" class="btn-ghost" id="btnRegisterDid">KV DID note</button>
+        <button type="button" class="btn-ghost" id="btnOpenCoreWeb">Open technocore</button>
+      </div>
+      <div class="footer-nav">
+        <button type="button" class="btn-secondary" id="back2">← Back</button>
+        <button type="button" class="btn-primary" id="next2" disabled>Check-in · Live →</button>
+      </div>
+    </section>
+
+    <section class="panel" id="p3">
+      <h2>Check-in · Live</h2>
+      <p class="desc">Read via this site. Send opens a confirm tab on technocore.chat. Do not reuse the same signed URL.</p>
+      <div class="field">
+        <label>Active room</label>
+        <div class="row">
+          <select id="activeRoom" style="flex:1;min-width:140px">
+            <option value="lobby">lobby (community)</option>
+            <option value="technocore">technocore (community)</option>
+          </select>
+          <button type="button" class="btn-secondary" id="btnRefreshLive">Refresh</button>
+          <button type="button" class="btn-ghost" id="btnOpenActiveWeb">Open room</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Live feed</label>
+        <pre class="mono live-sm" id="liveFeed" style="min-height:120px;max-height:220px">Select a room and press Refresh.</pre>
+        <p class="status" id="liveStatus"></p>
+      </div>
+      <div class="field">
+        <label>Send to active room</label>
+        <div class="row">
+          <input id="liveMsg" placeholder="Your message…" style="flex:1;min-width:120px" />
+          <button type="button" class="btn-primary" id="btnLiveSend">Send</button>
+        </div>
+        <p class="status" id="sendStatus"></p>
+        <div id="sendAlert"></div>
+      </div>
+      <div class="action-card">
+        <h3>Quick lobby check-in</h3>
+        <p>Uses the lobby draft from Step 2.</p>
+        <button type="button" class="btn-secondary" id="btnQuickCheckin">Send lobby check-in</button>
+        <p class="status" id="checkinStatus" style="margin-top:8px"></p>
+        <div id="checkinAlert"></div>
+      </div>
+      <div class="footer-nav">
+        <button type="button" class="btn-secondary" id="back3">← Back</button>
+        <span class="status">Verify posts on technocore.chat</span>
+      </div>
+    </section>
+
+    <footer class="site-foot">
+      Made by <a href="https://x.com/Bearcrypto2021" target="_blank" rel="noopener">@Bearcrypto2021</a>
+      · Not affiliated with Flop Labs · No airdrop guaranteed
+    </footer>
+  </div>
+  <div class="toast" id="toast"></div>
+  <script src="https://cdn.jsdelivr.net/npm/tweetnacl@1.0.3/nacl.min.js"></script>
+  <script src="./js/crypto.js"></script>
+  <script src="./js/ui.js"></script>
+  <script src="./js/app.js"></script>
+</body>
+</html>
